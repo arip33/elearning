@@ -1,20 +1,10 @@
 <?php class _adminController extends Controller{
-	public $url = "";
-	public $urlaccess = "";
-	public $viewpath = "";
-	public $auth;
-	static $referer = false;
-	static $private = true;
-	static $role = false;
-	public $pk;
-	public $limit = 5;
-	public $limit_arr = array('5','10','15');
-	public $arrNoquote = array();
-	protected $layout = "";
-	protected $viewdetail = "";
-	protected $viewlist = "";
-	protected $filter = " 1=1 ";
-	protected $page_escape = array('panelbackend/home','panelbackend/login','panelbackend/ajax');
+	public $access_mode = array();
+	public $page_escape = array('panelbackend/home','panelbackend/login','panelbackend/ajax','');
+	public $is_guru = false;
+	public $is_admin = false;
+	public $is_siswa = false;
+	public $is_operator = false;
 	public function __construct()
 	{
 		parent::__construct();
@@ -38,9 +28,20 @@
 	private function InitAdmin(){
 		//$modelkota = new KotaModel();
 		//$this->data['listkota'] = $modelkota->GetKota();
-		//$this->data['listjk'] = array(''=>'-pilih-','1'=>'Laki-laki','2'=>'Perempuan');
+		$this->data['listjk'] = array(''=>'-pilih-','1'=>'Laki-laki','2'=>'Perempuan');
 		
-
+		if($_SESSION[SESSION_APP]['group_id']==1){
+			$this->is_admin = true;
+		}
+		if($_SESSION[SESSION_APP]['group_id']==2){
+			$this->is_operator = true;
+		}
+		if($_SESSION[SESSION_APP]['group_id']==3){
+			$this->is_guru = true;
+		}
+		if($_SESSION[SESSION_APP]['group_id']==4){
+			$this->is_siswa = true;
+		}
 	}
 
 	protected function View($view='')
@@ -67,7 +68,7 @@
 			exit();
 		}
 		// set private area
-		if(static::$private)
+		if($this->private)
 		{
 			// ceck login
 			if(!$_SESSION[SESSION_APP]['login']){
@@ -75,15 +76,33 @@
 				URL::Redirect('panelbackend/login','client');
 			}
 		}
+
 		if(in_array($this->page_ctrl, $this->page_escape))
 			return true;
 
 		if($_SESSION[SESSION_APP]['user_id']!=1){
-			$allow = $this->auth->GetAccessRole($this->page_ctrl,$this->mode);
-			if($allow){
+
+			$this->is_super_admin = false;
+
+			$this->access_mode = $this->auth->GetAccessRole($this->page_ctrl);
+			if(count($this->access_mode)){
+				$this->access_mode[]='index';
+				$this->access_mode[]='detail';
+				$this->access_mode[]='lst';
+				$this->access_mode[]='reset';
+
+				if(in_array('add', $this->access_mode) or in_array('edit', $this->access_mode)){
+					$this->access_mode[]='save';
+					$this->access_mode[]='batal';
+				}
+			}
+			
+			if(!in_array($this->mode, $this->access_mode)){
 				$this->Error403();
 				exit();
 			}
+		}else{
+			$this->is_super_admin = true;
 		}
 	}
 
@@ -309,32 +328,46 @@
 			$this->IsValid($record);
 
             $this->setLogRecord($record,$id);
-
+            
+            $this->model->conn->StartTrans();
 			if ($id) {
 				$return = $this->model->Update($record, "$this->pk = $id");
-				if ($return) {
-					$this->SetFlash('suc_msg', $return['success']);
-					URL::Redirect("$this->page_ctrl/edit/$id");					
+				if ($return['success']) {
+					$return1 = $this->_addUpdate($id);
+					if(!$return1){
+						$return = false;
+					}
 				}
-				else {
-					$this->data['row'] = $record;
-					$this->data['err_msg'] = "Data gagal diubah";
+			}else {
+				$return = $this->model->Insert($record);
+				$id = $return['data'][$this->pk];
+				if ($return['success']) {
+					$return1 = $this->_addInsert($id);
+					if(!$return1){
+						$return = false;
+					}
 				}
 			}
-			else {
-				$return = $this->model->Insert($record);
-				if ($return) {
-					$this->SetFlash('suc_msg', $return['success']);
-					URL::Redirect("$this->page_ctrl/edit/".$return['data'][$this->pk]);					
-				}
-				else {
-					$this->data['row'] = $record;
-					$this->data['err_msg'] = "Data gagal disimpan";
-				}
+            $this->model->conn->CompleteTrans();
+
+			if ($return['success']) {
+				$this->SetFlash('suc_msg', $return['success']);
+				URL::Redirect("$this->page_ctrl/edit/$id");				
+			}else {
+				$this->data['row'] = array_merge($this->data['row'],$record);
+				$this->data['err_msg'] = "Data gagal disimpan";
 			}
 		}
 				
 		$this->View($this->viewdetail);
+	}
+
+	protected function _addUpdate($id){
+		return true;
+	}
+
+	protected function _addInsert($id){
+		return true;
 	}
 
 	public function _actionDetail( $id=null){		
@@ -345,8 +378,18 @@
 		$this->View($this->viewdetail);		
 	}
 
+	protected function _addDelete($id){
+		return true;
+	}
+
 	public function _actionDelete( $id=null){
-		$return = $this->model->delete("$this->pk = $id");
+
+		$retrun = $this->_addDelete($id);
+		
+		if($retrun){
+			$return = $this->model->delete("$this->pk = $id");
+		}
+
 		if ($return) {
 			$this->SetFlash('suc_msg', $return['success']);
 			URL::Redirect("$this->page_ctrl");

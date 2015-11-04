@@ -164,30 +164,5 @@
 </html>
     <script src="<?=URL::Base()?>assets/js/tinymce/tinymce.min.js"></script>
     <script src="<?=URL::Base()?>assets/js/cms.js"></script>
-  
-<script>
-var editor = function(select, options){
-    var init = $.extend(true,{
-        selector: select,
-        theme: "modern",
-        relative_urls : false,
-        plugins: [
-            "advlist autolink autosave link image lists charmap print preview hr anchor pagebreak spellchecker",
-            "searchreplace wordcount visualblocks visualchars code media",
-            "table contextmenu directionality emoticons template textcolor paste textcolor filemanager"
-        ],
-        add_unload_trigger: false,
-        autosave_ask_before_unload: false,
-        image_advtab: true, 
-        toolbar1: "bold italic underline strikethrough  alignleft aligncenter alignright alignjustify | bullist numlist | outdent indent blockquote removeformat | searchreplace | undo redo | link unlink anchor image media code | preview | forecolor backcolor | table | hr | subscript superscript | charmap emoticons | print | ltr rtl | spellchecker | visualchars visualblocks template pagebreak restoredraft | insertfile insertimage | formatselect fontselect fontsizeselect",
-        menubar: false,
-        toolbar_items_size: 'small',
-        templates: [
-            {title: '-pilih-', description: 'Pilihan Kosong', content: '(kosong)'},
-            <?php foreach($tamplate as $row){ ?>
-            {title: '<?=$row['nama']?>', description: '', url: '<?=URL::Base()."panelbackend/template_contents/template/{$row['template_contents_id']}"?>'}
-            <?php }?>
-        ]
-    },options);
-    tinymce.init(init);
-};
+    <script type="text/javascript" src="<?=URL::Base()?>assets/js/tinymce/plugins/tiny_mce_wiris/integration/WIRISplugins.js?viewer=image"></script> 
+        

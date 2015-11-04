@@ -16,6 +16,24 @@
 			$data['login']=true;
 			unset($data['password']);
 
+			$data1 = array();
+			if($data['group_id']=='3'){
+				$data1 = $this->GetRow("
+				select id_guru, nip, nama, email from elearning_guru
+				where email = '$data[username]'
+				");
+			}
+			if($data['group_id']=='4'){
+				$data1 = $this->GetRow("
+				select id_siswa, nis, nisn, nama, email, id_kelas from elearning_siswa
+				where email = '$data[username]'
+				");
+			}
+
+			if(is_array($data1)){
+				$data = array_merge($data, $data1);
+			}
+
 			foreach($data as $k=>$v){
 				$_SESSION[SESSION_APP][$k]=$v;
 			}
@@ -156,7 +174,32 @@
 		return $respon;
 	}
 
-	public function GetAccessRole($url="",$action=""){
+	public function GetAccessRole($url=""){
+		$group_id = $_SESSION[SESSION_APP]['group_id'];
+
+		$sql = "
+			SELECT 
+			    ifnull(b.name,'index') as name
+			FROM
+			    public_sys_menu d
+			        LEFT JOIN
+			    public_sys_group_menu c ON c.menu_id = d.menu_id
+			        left join
+			    public_sys_group_action a ON a.group_menu_id = c.group_menu_id
+			        LEFT JOIN
+			    public_sys_action b ON a.action_id = b.action_id
+			WHERE c.group_id = '$group_id' AND d.url='$url'";
+		$data = $this->GetArray($sql);
+		$return = array();
+		foreach ($data as $key => $value) {
+			# code...
+			$return[]=$value['name'];
+		}
+		
+		return $return;
+	}
+
+	public function GetAccessRole1($url="",$action=""){
 		$group_id = $_SESSION[SESSION_APP]['group_id'];
 		$user_id = $_SESSION[SESSION_APP]['user_id'];
 		if($user_id == 1){

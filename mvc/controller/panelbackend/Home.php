@@ -6,9 +6,14 @@ class Home extends _adminController{
 		$this->layout = "panelbackend/layout1";
 	}
 	function _actionIndex($page=''){
-		$this->data['page_title'] = 'Statistik Pengunjung';
-		$this->data['visitors'] = $this->auth->statistikVisitor();
-		$this->View("panelbackend/home");
+		if($this->is_siswa){
+			$this->data['page_title'] = 'Dashboard';
+			$this->View("panelbackend/homesiswa");
+		}else{
+			$this->data['page_title'] = 'Statistik Pengunjung';
+			$this->data['visitors'] = $this->auth->statistikVisitor();
+			$this->View("panelbackend/home");
+		}
 	}
 
 	function _actionProfile(){
